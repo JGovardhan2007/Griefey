@@ -1,24 +1,47 @@
-
-# Griefey: Grievance Redressal App
+# Project Blueprint: Griefey
 
 ## Overview
 
-Griefey is a Flutter-based mobile and web application designed to streamline the process of reporting and resolving public grievances. It provides a platform for citizens to submit complaints about civic issues, track their resolution, and interact with administrative bodies. The app includes role-based access for citizens and administrators, ensuring a structured and efficient workflow.
+Griefey is a Flutter-based mobile and web application designed to be a comprehensive grievance redressal system. It provides a platform for users to submit, track, and manage grievances, while also offering an administrative backend for staff to review, update, and resolve these issues. The application is built with a focus on modern design, a responsive user experience, and a robust, scalable architecture using Firebase for its backend services.
 
-## Key Features
+## Implemented Features & Design
 
-*   **User Authentication:** Secure sign-up and login for citizens and administrators.
-*   **Grievance Submission:** Citizens can submit grievances with details, including category, description, and an optional photo.
-*   **Location Tagging:** Automatically captures the user's location for precise issue mapping.
-*   **Status Tracking:** Real-time updates on the status of submitted grievances (Pending, In-Progress, Resolved).
-*   **Admin Dashboard:** A dedicated dashboard for administrators to view, manage, and update the status of grievances.
-*   **Interactive Charts:** Visual representations of grievances by category and status.
-*   **User Profile Management:** Users can view and edit their profile information.
-*   **Theme Customization:** Switch between light, dark, and system theme modes for a personalized experience.
+### 1. Architecture & Core Libraries
 
-## Design and Styling
+*   **Decoupled Authentication:** The app uses a provider-based architecture with a dedicated `AuthService` (`lib/auth_service.dart`). This service encapsulates all Firebase Authentication logic, separating it cleanly from the UI. This is the industry best practice, providing testability and maintainability.
+*   **Declarative Routing with `go_router`:** Navigation is handled by the `go_router` package. The routing logic (`lib/app_router.dart`) is authentication-aware, automatically redirecting users based on their login status. This is achieved by injecting the `AuthService` into the router.
+*   **State Management with `Provider`:** The `provider` package is used for dependency injection (providing the `AuthService`) and for managing app-wide state, such as the theme.
+*   **Environment-Specific Firebase Config:** The app correctly uses different Firebase configurations for web (`localhost` for development) and mobile, ensuring smooth local development without CORS issues.
 
-*   **Theme:** A modern, consistent theme across the application, with a choice of light, dark, and system modes.
-*   **Color Scheme:** A clear and accessible color palette that enhances usability and visual appeal.
-*   **Typography:** Clean and readable typography for a user-friendly experience.
-*   **Layout:** A responsive and intuitive layout that adapts to different screen sizes.
+### 2. Authentication Flow
+
+*   **Email & Password Authentication:** Users can sign up for a new account with their name, email, and password, or sign in with existing credentials.
+*   **Specific Error Handling:** The login and sign-up screens provide clear, user-friendly error messages for common issues like incorrect passwords, non-existent users, or weak passwords. This is managed centrally in the `AuthService`.
+*   **Secure User Data Storage:** Upon registration, user details (name, email, creation date, and admin status) are securely stored in a `users` collection in Firestore, linked by the user's unique Firebase UID.
+*   **Role-Based Access Control (RBAC):** The system supports an `isAdmin` flag on user documents and leverages Firebase Auth custom claims to differentiate between regular users and administrators.
+
+### 3. User Interface & Design
+
+*   **Modern Material 3 Design:** The application adheres to Material 3 design principles, using `ThemeData` to define a consistent and modern look and feel.
+*   **Custom Theming:** A centralized theme (`lib/theme_provider.dart`) defines color schemes, typography (using `GoogleFonts`), and component styles for both light and dark modes.
+*   **Responsive UI:** The layout is designed to be responsive, working well on both mobile devices and larger web screens.
+*   **Polished Components:**
+    *   **Cards with Elevation:** Grievance list items use `Card` widgets with elevation for a clean, layered look.
+    *   **Interactive FAB:** The "Submit Grievance" Floating Action Button includes a subtle hover animation for a better user experience on web.
+    *   **Status Chips:** Grievances are displayed with color-coded status chips (Pending, In-Progress, Resolved) for quick visual identification.
+    *   **Empty State:** A helpful and visually appealing empty state is shown on the home screen when a user has not yet submitted any grievances.
+
+### 4. Grievance Management
+
+*   **Real-time Grievance List:** The home screen displays a real-time list of the user's grievances using a `StreamBuilder` connected to a Firestore query.
+*   **Grievance Submission:** Users can navigate to a dedicated screen to submit a new grievance, including a title, category, and other details.
+*   **Grievance Details:** Tapping on a grievance in the list navigates the user to a details screen where they can view more information.
+*   **Admin Dashboard:** An admin-only dashboard is accessible to users with the `admin` custom claim, allowing them to view and manage all user grievances.
+
+---
+
+## Current Plan: Project Documentation
+
+*   **Action:** Create a comprehensive `blueprint.md` file.
+*   **Purpose:** To document the application's current architecture, features, and design decisions. This serves as a single source of truth for the project's state, facilitating future development, onboarding of new developers, and ensuring consistency.
+*   **Status:** Completed.

@@ -1,50 +1,28 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
-class SplashScreen extends StatefulWidget {
+/// A simple, stateless splash screen.
+///
+/// This screen is displayed briefly while the application determines the
+/// initial route based on the user's authentication status. It does not
+/// contain any navigation logic itself.
+class SplashScreen extends StatelessWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
-}
-
-class _SplashScreenState extends State<SplashScreen> {
-  @override
-  void initState() {
-    super.initState();
-    _checkAuthStatus();
-  }
-
-  Future<void> _checkAuthStatus() async {
-    // Delay for a moment to show the splash screen
-    await Future.delayed(const Duration(seconds: 2));
-
-    if (!mounted) return;
-
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      // User is logged in
-      context.go('/home');
-    } else {
-      // User is not logged in
-      context.go('/login');
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return const Scaffold(
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            Image.asset(
-              'assets/images/griefey_logo.png', // Path to your logo
+            // It is recommended to use a more modern and adaptive logo if possible.
+            // For now, we will keep the existing one.
+            Image(
+              image: AssetImage('assets/images/griefey_logo.png'),
               height: 150,
             ),
-            const SizedBox(height: 48),
-            const CircularProgressIndicator(),
+            SizedBox(height: 48),
+            CircularProgressIndicator(),
           ],
         ),
       ),

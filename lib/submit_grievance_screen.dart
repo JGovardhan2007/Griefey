@@ -2,11 +2,11 @@ import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:provider/provider.dart';
+
+import 'submit_grievance_service.dart';
 
 class SubmitGrievanceScreen extends StatefulWidget {
   const SubmitGrievanceScreen({super.key});
@@ -20,139 +20,48 @@ class _SubmitGrievanceScreenState extends State<SubmitGrievanceScreen> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
 
-  String? _selectedCategory;
-  final List<String> _categories = [
-    'Roads',
-    'Electricity',
-    'Water',
-    'Health',
-    'Sanitation',
-    'Public Transport',
-    'Other',
+  final _category = ValueNotifier<String?>(null);
+  final _imageFile = ValueNotifier<XFile?>(null);
+  final _location = ValueNotifier<Position?>(null);
+  final _isSubmitting = ValueNotifier<bool>(false);
+
+  final _categories = [
+    'Roads', 'Electricity', 'Water', 'Health',
+    'Sanitation', 'Public Transport', 'Other'
   ];
 
-  XFile? _imageFile;
-  bool _isUploading = false;
-  bool _isFetchingLocation = false;
-  Position? _currentPosition;
+  late final SubmitGrievanceService _grievanceService;
 
-  Future<void> _pickImage(ImageSource source) async {
-    final ImagePicker picker = ImagePicker();
-    try {
-      final XFile? pickedFile = await picker.pickImage(source: source);
-      setState(() {
-        _imageFile = pickedFile;
-      });
-    } catch (e) {
-      // Handle exceptions
-    }
+  @override
+  void initState() {
+    super.initState();
+    _grievanceService = SubmitGrievanceService();
   }
 
-  Future<void> _getCurrentLocation() async {
-    setState(() {
-      _isFetchingLocation = true;
-    });
-    try {
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          return Future.error('Location permissions are denied');
-        }
-      }
-      Position position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (_category.value == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a category.')),
       );
-      setState(() {
-        _currentPosition = position;
-      });
-    } catch (e) {
-      // Handle error
-    } finally {
-      setState(() {
-        _isFetchingLocation = false;
-      });
+      return;
     }
-  }
 
-  Future<String?> _uploadFile(String grievanceId) async {
-    if (_imageFile == null) return null;
-
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return null;
-
-    String fileName = DateTime.now().millisecondsSinceEpoch.toString();
-    Reference storageRef = FirebaseStorage.instance.ref().child(
-      'grievances/${user.uid}/$grievanceId/$fileName',
-    );
+    _isSubmitting.value = true;
 
     try {
-      if (kIsWeb) {
-        await storageRef.putData(await _imageFile!.readAsBytes());
-      } else {
-        await storageRef.putFile(File(_imageFile!.path));
-      }
-      return await storageRef.getDownloadURL();
-    } catch (e) {
-      return null;
-    }
-  }
+      final imageUrl = await _grievanceService.uploadFile(
+        _imageFile.value,
+        _titleController.text, // Using title for a more descriptive path
+      );
 
-  Future<void> _submitGrievance() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-    if (_selectedCategory == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Please select a category')));
-      return;
-    }
-
-    setState(() {
-      _isUploading = true;
-    });
-
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      setState(() {
-        _isUploading = false;
-      });
-      return;
-    }
-
-    try {
-      DocumentReference grievanceRef = FirebaseFirestore.instance
-          .collection('grievances')
-          .doc();
-
-      String? fileUrl = await _uploadFile(grievanceRef.id);
-
-      GeoPoint? locationPoint;
-      if (_currentPosition != null) {
-        locationPoint = GeoPoint(
-          _currentPosition!.latitude,
-          _currentPosition!.longitude,
-        );
-      }
-
-      await grievanceRef.set({
-        'userId': user.uid,
-        'title': _titleController.text.trim(),
-        'description': _descriptionController.text.trim(),
-        'category': _selectedCategory,
-        'status': 'Pending', 
-        'submittedAt': FieldValue.serverTimestamp(),
-        'imageUrl': fileUrl,
-        'location': locationPoint,
-        'history': [
-          {
-            'status': 'Pending',
-            'timestamp': Timestamp.now(),
-            'notes': 'Grievance submitted by citizen.',
-          },
-        ],
-      });
+      await _grievanceService.submitGrievance(
+        title: _titleController.text,
+        description: _descriptionController.text,
+        category: _category.value!,
+        imageUrl: imageUrl,
+        location: _location.value,
+      );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -163,191 +72,191 @@ class _SubmitGrievanceScreenState extends State<SubmitGrievanceScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to submit grievance: $e')),
+          SnackBar(content: Text('Error: $e')),
         );
       }
     } finally {
-      if (mounted) {
-        setState(() {
-          _isUploading = false;
-        });
-      }
+      _isSubmitting.value = false;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
-        appBar: AppBar(
-          title: const Text('Submit a Grievance'),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: () {
-              context.pop();
-            },
+      appBar: AppBar(title: const Text('Submit Grievance')),
+      body: ValueListenableBuilder<bool>(
+        valueListenable: _isSubmitting,
+        builder: (context, isSubmitting, child) {
+          return isSubmitting
+              ? const _LoadingIndicator(message: 'Submitting Grievance...')
+              : child!;
+        },
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.all(16.0),
+            children: [
+              _buildSectionCard(
+                title: 'Grievance Details',
+                children: [
+                  TextFormField(
+                    controller: _titleController,
+                    decoration: const InputDecoration(labelText: 'Title'),
+                    validator: (v) => v!.isEmpty ? 'Title is required' : null,
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    items: _categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+                    onChanged: (v) => _category.value = v,
+                    decoration: const InputDecoration(labelText: 'Category'),
+                    validator: (v) => v == null ? 'Category is required' : null,
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _descriptionController,
+                    decoration: const InputDecoration(labelText: 'Description'),
+                    maxLines: 5,
+                    validator: (v) => v!.isEmpty ? 'Description is required' : null,
+                  ),
+                ],
+              ),
+              _buildSectionCard(
+                title: 'Attachments',
+                children: [
+                  _ImagePickerSection(imageFile: _imageFile, service: _grievanceService),
+                  const SizedBox(height: 16),
+                  _LocationPickerSection(location: _location, service: _grievanceService),
+                ],
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: _submit,
+                child: const Text('Submit Grievance'),
+              ),
+            ],
           ),
         ),
-        body: _isUploading
-            ? const Center(
-                child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Submitting Grievance...'),
-                ],
-              ))
-            : SingleChildScrollView(
-                padding: const EdgeInsets.all(16.0),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      TextFormField(
-                        controller: _titleController,
-                        decoration: const InputDecoration(
-                          labelText: 'Title',
-                          hintText: 'e.g., Pothole on Main Street',
-                          border: OutlineInputBorder(),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter a title';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      DropdownButtonFormField<String>(
-                        decoration: const InputDecoration(
-                          labelText: 'Category',
-                          border: OutlineInputBorder(),
-                        ),
-                        items: _categories.map((String category) {
-                          return DropdownMenuItem<String>(
-                            value: category,
-                            child: Text(category),
-                          );
-                        }).toList(),
-                        onChanged: (newValue) {
-                          setState(() {
-                            _selectedCategory = newValue;
-                          });
-                        },
-                        validator: (value) {
-                          if (value == null) {
-                            return 'Please select a category';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _descriptionController,
-                        decoration: const InputDecoration(
-                          labelText: 'Description',
-                          hintText: 'Provide details about the issue...',
-                          border: OutlineInputBorder(),
-                        ),
-                        maxLines: 5,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter a description';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 24),
-                      const Text(
-                        'Attach Photo (Optional)',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          ElevatedButton.icon(
-                            onPressed: () => _pickImage(ImageSource.camera),
-                            icon: const Icon(Icons.camera_alt_outlined),
-                            label: const Text('Camera'),
-                          ),
-                          ElevatedButton.icon(
-                            onPressed: () => _pickImage(ImageSource.gallery),
-                            icon: const Icon(Icons.photo_library_outlined),
-                            label: const Text('Gallery'),
-                          ),
-                        ],
-                      ),
-                      if (_imageFile != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 16.0),
-                          child: kIsWeb
-                              ? Image.network(_imageFile!.path, height: 150)
-                              : Image.file(File(_imageFile!.path), height: 150),
-                        ),
-                      const SizedBox(height: 24),
-                      const Text(
-                        'Location',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      _isFetchingLocation
-                          ? const Center(child: CircularProgressIndicator())
-                          : _currentPosition == null
-                              ? OutlinedButton.icon(
-                                  onPressed: _getCurrentLocation,
-                                  icon: const Icon(Icons.my_location),
-                                  label: const Text('Auto-Detect Location'),
-                                )
-                              : ListTile(
-                                  leading: const Icon(
-                                    Icons.location_on,
-                                    color: Colors.green,
-                                  ),
-                                  title: Text(
-                                    'Lat: ${_currentPosition!.latitude.toStringAsFixed(5)}, Lon: ${_currentPosition!.longitude.toStringAsFixed(5)}',
-                                  ),
-                                  trailing: IconButton(
-                                    icon: const Icon(
-                                      Icons.refresh,
-                                      color: Colors.blue,
-                                    ),
-                                    onPressed: _getCurrentLocation,
-                                    tooltip: 'Refresh Location',
-                                  ),
-                                ),
-                      const SizedBox(height: 32),
-                      ElevatedButton(
-                        onPressed: _submitGrievance,
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          textStyle: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          elevation: 8,
-                          shadowColor: theme.colorScheme.primary.withOpacity(0.5),
-                        ),
-                        child: const Text('Submit Grievance'),
-                      ),
-                    ],
-                  ),
-                )));
+      ),
+    );
+  }
+
+  Widget _buildSectionCard({required String title, required List<Widget> children}) {
+    final theme = Theme.of(context);
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16.0),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: theme.textTheme.titleLarge),
+            const SizedBox(height: 16),
+            ...children,
+          ],
+        ),
+      ),
+    );
   }
 
   @override
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
+    _category.dispose();
+    _imageFile.dispose();
+    _location.dispose();
+    _isSubmitting.dispose();
     super.dispose();
+  }
+}
+
+class _ImagePickerSection extends StatelessWidget {
+  const _ImagePickerSection({required this.imageFile, required this.service});
+
+  final ValueNotifier<XFile?> imageFile;
+  final SubmitGrievanceService service;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<XFile?>(
+      valueListenable: imageFile,
+      builder: (context, file, child) {
+        return Column(
+          children: [
+            if (file != null)
+              kIsWeb
+                  ? Image.network(file.path, height: 150)
+                  : Image.file(File(file.path), height: 150),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ElevatedButton.icon(
+                  onPressed: () async => imageFile.value = await service.pickImage(ImageSource.camera),
+                  icon: const Icon(Icons.camera_alt),
+                  label: const Text('Camera'),
+                ),
+                ElevatedButton.icon(
+                  onPressed: () async => imageFile.value = await service.pickImage(ImageSource.gallery),
+                  icon: const Icon(Icons.photo_library),
+                  label: const Text('Gallery'),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _LocationPickerSection extends StatelessWidget {
+  const _LocationPickerSection({required this.location, required this.service});
+
+  final ValueNotifier<Position?> location;
+  final SubmitGrievanceService service;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<Position?>(
+      valueListenable: location,
+      builder: (context, pos, child) {
+        if (pos != null) {
+          return ListTile(
+            leading: const Icon(Icons.location_on, color: Colors.green),
+            title: Text('Lat: ${pos.latitude.toStringAsFixed(5)}, Lon: ${pos.longitude.toStringAsFixed(5)}'),
+            trailing: IconButton(
+              icon: const Icon(Icons.refresh, color: Colors.blue),
+              onPressed: () async => location.value = await service.getCurrentLocation(),
+            ),
+          );
+        }
+        return OutlinedButton.icon(
+          onPressed: () async => location.value = await service.getCurrentLocation(),
+          icon: const Icon(Icons.my_location),
+          label: const Text('Get Location'),
+        );
+      },
+    );
+  }
+}
+
+class _LoadingIndicator extends StatelessWidget {
+  const _LoadingIndicator({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const CircularProgressIndicator(),
+          const SizedBox(height: 16),
+          Text(message),
+        ],
+      ),
+    );
   }
 }
