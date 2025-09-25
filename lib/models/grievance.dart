@@ -1,5 +1,4 @@
-
-enum GrievanceStatus { Pending, InProgress, Resolved }
+enum GrievanceStatus { pending, inProgress, resolved }
 
 class Grievance {
   final String id;

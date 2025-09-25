@@ -1,18 +1,12 @@
 {
-  "mcpServers": {
-    "dart": {
-      "command": "dart",
-      "args": [
-        "mcp-server"
-      ]
-    },
-    "firebase": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "firebase-tools@latest",
-        "experimental:mcp"
-      ]
+    "mcpServers": {
+        "firebase": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "firebase-tools@latest",
+                "experimental:mcp"
+            ]
+        }
     }
-  }
 }

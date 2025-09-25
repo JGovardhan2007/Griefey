@@ -1,0 +1,28 @@
+{
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "functions": {
+    "source": "functions"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "bubble-new-70fa8",
+          "appId": "1:160803873628:android:6137faf3c000e0b7c6d799",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "bubble-new-70fa8",
+          "configurations": {
+            "android": "1:160803873628:android:6137faf3c000e0b7c6d799",
+            "web": "1:160803873628:web:402a3ad7638ad7e0c6d799"
+          }
+        }
+      }
+    }
+  }
+}
