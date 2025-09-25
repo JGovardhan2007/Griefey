@@ -72,98 +72,98 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       body: StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance
-                .collection('grievances')
-                .where('userId', isEqualTo: user?.uid)
-                .orderBy('submittedAt', descending: true)
-                .snapshots(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (snapshot.hasError) {
-                return Center(
-                  child: Text('Something went wrong: ${snapshot.error}'),
-                );
-              }
-              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Image.asset('assets/images/griefey_logo.png', height: 100, color: Colors.grey[400]),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'No grievances yet.',
-                        style: TextStyle(fontSize: 18, color: Colors.grey),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Tap the button below to submit your first one!',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                    ],
+        stream: FirebaseFirestore.instance
+            .collection('grievances')
+            .where('userId', isEqualTo: user?.uid)
+            .orderBy('submittedAt', descending: true)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(
+              child: Text('Something went wrong: ${snapshot.error}'),
+            );
+          }
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Image.asset('assets/images/griefey_logo.png', height: 100, color: Colors.grey[400]),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'No grievances yet.',
+                    style: TextStyle(fontSize: 18, color: Colors.grey),
                   ),
-                );
-              }
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Tap the button below to submit your first one!',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ],
+              ),
+            );
+          }
 
-              final grievances = snapshot.data!.docs;
+          final grievances = snapshot.data!.docs;
 
-              return ListView.builder(
-                padding: const EdgeInsets.all(8.0),
-                itemCount: grievances.length,
-                itemBuilder: (context, index) {
-                  final grievance = grievances[index];
-                  final data = grievance.data() as Map<String, dynamic>;
-                  final status = data['status'] ?? 'Pending';
+          return ListView.builder(
+            padding: const EdgeInsets.all(8.0),
+            itemCount: grievances.length,
+            itemBuilder: (context, index) {
+              final grievance = grievances[index];
+              final data = grievance.data() as Map<String, dynamic>;
+              final status = data['status'] ?? 'Pending';
 
-                  return HoverCard(
-                    child: Card(
-                      elevation: 4,
-                      margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      child: InkWell(
-                        onTap: () => context.go('/details/${grievance.id}'),
-                        borderRadius: BorderRadius.circular(12),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Row(
-                            children: [
-                              _getStatusIcon(status, theme),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      data['title'] ?? 'No Title',
-                                      style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      data['category'] ?? 'No Category',
-                                      style: theme.textTheme.bodyMedium?.copyWith(color: theme.textTheme.bodySmall?.color?.withAlpha(204)),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'Submitted: ${DateFormat.yMMMd().add_jm().format((data['submittedAt'] as Timestamp).toDate())}',
-                                      style: theme.textTheme.bodySmall,
-                                    ),
-                                  ],
+              return HoverCard(
+                child: Card(
+                  elevation: 4,
+                  margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  child: InkWell(
+                    onTap: () => context.go('/details/${grievance.id}'),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Row(
+                        children: [
+                          _buildGrievanceImage(data, theme),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  data['title'] ?? 'No Title',
+                                  style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                                 ),
-                              ),
-                              _getStatusChip(status, theme),
-                            ],
+                                const SizedBox(height: 4),
+                                Text(
+                                  data['category'] ?? 'No Category',
+                                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.textTheme.bodySmall?.color?.withAlpha(204)),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Submitted: ${DateFormat.yMMMd().add_jm().format((data['submittedAt'] as Timestamp).toDate())}',
+                                  style: theme.textTheme.bodySmall,
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
+                          _getStatusChip(status, theme),
+                        ],
                       ),
                     ),
-                  );
-                },
+                  ),
+                ),
               );
             },
-          ),
+          );
+        },
+      ),
       floatingActionButton: MouseRegion(
         onEnter: (_) => _isFabHovered.value = true,
         onExit: (_) => _isFabHovered.value = false,
@@ -185,6 +185,43 @@ class _HomeScreenState extends State<HomeScreen> {
             );
           },
         ),
+      ),
+    );
+  }
+
+  Widget _buildGrievanceImage(Map<String, dynamic> data, ThemeData theme) {
+    final imageUrl = data['imageUrl'] as String?;
+    final status = data['status'] ?? 'Pending';
+
+    return Container(
+      width: 60,
+      height: 60,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: theme.colorScheme.surfaceVariant,
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: (imageUrl != null && imageUrl.isNotEmpty)
+            ? Image.network(
+                imageUrl,
+                fit: BoxFit.cover,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Center(
+                    child: CircularProgressIndicator(
+                      value: loadingProgress.expectedTotalBytes != null
+                          ? loadingProgress.cumulativeBytesLoaded /
+                              loadingProgress.expectedTotalBytes!
+                          : null,
+                    ),
+                  );
+                },
+                errorBuilder: (context, error, stackTrace) {
+                  return _getStatusIcon(status, theme);
+                },
+              )
+            : _getStatusIcon(status, theme),
       ),
     );
   }

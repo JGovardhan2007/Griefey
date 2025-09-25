@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:developer' as developer;
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -29,48 +30,76 @@ class _SignupScreenState extends State<SignupScreen> {
     });
 
     try {
+      // 1. Create user in Firebase Auth
       UserCredential userCredential = await FirebaseAuth.instance
           .createUserWithEmailAndPassword(
             email: _emailController.text.trim(),
             password: _passwordController.text.trim(),
           );
 
-      // Store user info in Firestore
+      // 2. Store user info in Firestore
       await FirebaseFirestore.instance
           .collection('users')
           .doc(userCredential.user!.uid)
           .set({
-            'name': _nameController.text.trim(),
-            'email': _emailController.text.trim(),
-            'createdAt': Timestamp.now(),
-          });
+        'name': _nameController.text.trim(),
+        'email': _emailController.text.trim(),
+        'createdAt': Timestamp.now(),
+        'isAdmin': false, // Default role
+      });
 
+      // 3. Navigate to home on complete success
       if (mounted) {
         context.go('/home');
       }
     } on FirebaseAuthException catch (e) {
       String message;
-      if (e.code == 'weak-password') {
-        message = 'The password provided is too weak.';
-      } else if (e.code == 'email-already-in-use') {
-        message = 'The account already exists for that email.';
-      } else {
-        message = 'An error occurred. Please try again.';
+      switch (e.code) {
+        case 'weak-password':
+          message = 'The password provided is too weak.';
+          break;
+        case 'email-already-in-use':
+          message = 'An account already exists for that email.';
+          break;
+        case 'invalid-email':
+          message = 'The email address is not valid.';
+          break;
+        default:
+          message = 'An authentication error occurred. Please try again.';
+          developer.log(
+            'Firebase Auth Signup Error',
+            name: 'com.example.myapp.signup',
+            error: e,
+          );
       }
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(message),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
-      }
+      _showErrorSnackBar(message);
+    } catch (e, s) {
+      // Catches other errors, like Firestore write failures
+      developer.log(
+        'General Signup Error',
+        name: 'com.example.myapp.signup',
+        error: e,
+        stackTrace: s,
+      );
+      _showErrorSnackBar('An unexpected error occurred. Could not create account.');
     } finally {
       if (mounted) {
         setState(() {
           _isLoading = false;
         });
       }
+    }
+  }
+
+  void _showErrorSnackBar(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Theme.of(context).colorScheme.error,
+          duration: const Duration(seconds: 5),
+        ),
+      );
     }
   }
 
@@ -83,7 +112,11 @@ class _SignupScreenState extends State<SignupScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
-            context.pop();
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/login');
+            }
           },
         ),
       ),

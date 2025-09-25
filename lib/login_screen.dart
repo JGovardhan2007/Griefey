@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:developer' as developer;
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -36,17 +37,48 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } on FirebaseAuthException catch (e) {
       String message;
-      if (e.code == 'user-not-found') {
-        message = 'No user found for that email.';
-      } else if (e.code == 'wrong-password') {
-        message = 'Wrong password provided.';
-      } else {
-        message = 'An error occurred. Please try again.';
+      switch (e.code) {
+        case 'user-not-found':
+          message = 'No user found for that email. Please sign up.';
+          break;
+        case 'wrong-password':
+          message = 'Incorrect password. Please try again.';
+          break;
+        case 'invalid-email':
+          message = 'The email address is not valid.';
+          break;
+        case 'user-disabled':
+          message = 'This user account has been disabled.';
+          break;
+        default:
+          message = 'An unexpected error occurred. Please try again later.';
+          developer.log(
+            'Firebase Authentication Error',
+            name: 'com.example.myapp.login',
+            error: e,
+            stackTrace: StackTrace.current,
+          );
       }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(message),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    } catch (e, s) {
+      developer.log(
+        'General Login Error',
+        name: 'com.example.myapp.login',
+        error: e,
+        stackTrace: s,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('An unexpected error occurred. Please try again.'),
             backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
