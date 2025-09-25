@@ -30,7 +30,7 @@ class HomeScreen extends StatelessWidget {
                 if (isAdmin) {
                   return IconButton(
                     icon: const Icon(Icons.admin_panel_settings_outlined),
-                    onPressed: () => context.go('/admin'),
+                    onPressed: () => context.push('/admin'),
                     tooltip: 'Admin Dashboard',
                   );
                 }
@@ -40,7 +40,7 @@ class HomeScreen extends StatelessWidget {
           ),
           IconButton(
             icon: const Icon(Icons.person_outline),
-            onPressed: () => context.go('/profile'),
+            onPressed: () => context.push('/profile'),
             tooltip: 'Profile',
           ),
           IconButton(
@@ -56,7 +56,7 @@ class HomeScreen extends StatelessWidget {
         child: const _GrievanceList(),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.go('/submit'),
+        onPressed: () => context.push('/submit'),
         label: const Text('Submit Grievance'),
         icon: const Icon(Icons.add),
       ),
@@ -105,7 +105,7 @@ class _GrievanceCard extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 16.0),
       child: InkWell(
-        onTap: () => context.go('/details/${grievance.id}'),
+        onTap: () => context.push('/details/${grievance.id}'),
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16.0),

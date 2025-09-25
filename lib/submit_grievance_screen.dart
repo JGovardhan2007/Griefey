@@ -55,7 +55,7 @@ class _SubmitGrievanceScreenState extends State<SubmitGrievanceScreen> {
         _titleController.text, // Using title for a more descriptive path
       );
 
-      await _grievanceService.submitGrievance(
+      final grievanceId = await _grievanceService.submitGrievance(
         title: _titleController.text,
         description: _descriptionController.text,
         category: _category.value!,
@@ -64,10 +64,20 @@ class _SubmitGrievanceScreenState extends State<SubmitGrievanceScreen> {
       );
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Grievance submitted successfully!')),
+        await showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Grievance Submitted'),
+            content: Text('Your grievance has been submitted successfully.\n\nToken ID: $grievanceId'),
+            actions: [
+              TextButton(
+                onPressed: () => context.pop(),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
         );
-        context.pop();
+        context.go('/home');
       }
     } catch (e) {
       if (mounted) {
@@ -83,7 +93,12 @@ class _SubmitGrievanceScreenState extends State<SubmitGrievanceScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Submit Grievance')),
+      appBar: AppBar(title: const Text('Submit Grievance'),
+      leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.pop(),
+        ),
+      ),
       body: ValueListenableBuilder<bool>(
         valueListenable: _isSubmitting,
         builder: (context, isSubmitting, child) {

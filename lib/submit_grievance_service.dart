@@ -60,7 +60,7 @@ class SubmitGrievanceService {
   }
 
   /// Submits the grievance data to Firestore.
-  Future<void> submitGrievance({
+  Future<String> submitGrievance({
     required String title,
     required String description,
     required String category,
@@ -94,5 +94,6 @@ class SubmitGrievanceService {
         },
       ],
     });
+    return grievanceRef.id;
   }
 }
