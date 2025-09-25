@@ -51,7 +51,7 @@ class AppThemes {
             GoogleFonts.roboto(fontSize: 16, fontWeight: FontWeight.bold),
       ),
     ),
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       elevation: 4,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16.0),
@@ -84,7 +84,7 @@ class AppThemes {
             GoogleFonts.roboto(fontSize: 16, fontWeight: FontWeight.bold),
       ),
     ),
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       elevation: 6,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16.0),
