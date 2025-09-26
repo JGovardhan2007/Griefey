@@ -50,12 +50,15 @@ class _SubmitGrievanceScreenState extends State<SubmitGrievanceScreen> {
     _isSubmitting.value = true;
 
     try {
+      final grievanceId = _grievanceService.createGrievanceId();
+
       final imageUrl = await _grievanceService.uploadFile(
         _imageFile.value,
-        _titleController.text, // Using title for a more descriptive path
+        grievanceId,
       );
 
-      final grievanceId = await _grievanceService.submitGrievance(
+      await _grievanceService.submitGrievance(
+        grievanceId: grievanceId,
         title: _titleController.text,
         description: _descriptionController.text,
         category: _category.value!,

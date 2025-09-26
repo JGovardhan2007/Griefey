@@ -110,7 +110,7 @@ class _EditGrievanceScreenState extends State<EditGrievanceScreen> {
                     ),
                     const SizedBox(height: 16.0),
                     DropdownButtonFormField<String>(
-                      value: _category,
+                      initialValue: _category,
                       decoration: const InputDecoration(labelText: 'Category'),
                       items: ['Technical', 'Billing', 'General']
                           .map((label) => DropdownMenuItem(

@@ -151,7 +151,7 @@ class _AdminStatusUpdaterState extends State<_AdminStatusUpdater> {
         const Text('Admin Actions', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
         const SizedBox(height: 16),
         DropdownButtonFormField<String>(
-          value: _selectedStatus,
+          initialValue: _selectedStatus,
           items: _statuses.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
           onChanged: (value) => setState(() => _selectedStatus = value),
           decoration: const InputDecoration(labelText: 'Update Status'),
