@@ -1,16 +1,53 @@
-# myapp
+# Griefey
 
-A new Flutter project.
+Griefey is a mobile application designed to help users submit and track grievances in a simple, transparent way.  
+It connects users with the concerned authority through a ticket-based system, ensuring accountability and timely resolution.
+
+---
+
+## About
+
+The app provides a user-friendly mobile interface where anyone can raise a grievance.  
+Once submitted, the grievance is stored in the database and reflected on the authority’s web portal for review and action.  
+
+Griefey aims to simplify the grievance redressal process with clarity, speed, and transparency.
+
+---
+
+## Features
+
+- User-friendly mobile interface for grievance submission  
+- Ticket generation with unique ID for tracking  
+- Real-time status updates (Pending, In Progress, Resolved)  
+- Notifications to keep users informed  
+- Authority dashboard (web) for grievance management  
+- Database storage for scalability and reliability  
+
+---
+
+## Tech Stack
+
+- **Mobile App:** Flutter (Dart)  
+- **Backend:** Node.js with Express  
+- **Database:** MongoDB  
+- **Web Portal (Authority):** React.js  
+
+---
 
 ## Getting Started
 
-This project is a starting point for a Flutter application.
+### Prerequisites
+- Flutter SDK installed  
+- Node.js and npm installed  
+- MongoDB setup locally or on cloud (e.g., MongoDB Atlas)
 
-A few resources to get you started if this is your first Flutter project:
+### Installation
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+```bash
+# Clone the repository
+git clone https://github.com/JGovardhan2007/Griefey.git
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+cd Griefey
+
+# Install Flutter dependencies
+flutter pub get
